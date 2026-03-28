@@ -1,0 +1,14 @@
+<svg width="560" height="160" viewBox="0 0 560 160" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">CivicLeave logo</title>
+  <desc id="desc">Minimal black and white logo mark with organization leave system wordmark</desc>
+
+  <rect x="12" y="20" width="120" height="120" rx="20" fill="#111111"/>
+  <rect x="30" y="38" width="84" height="84" rx="14" fill="#FFFFFF"/>
+
+  <path d="M52 68H92" stroke="#111111" stroke-width="8" stroke-linecap="round"/>
+  <path d="M52 84H92" stroke="#111111" stroke-width="8" stroke-linecap="round"/>
+  <path d="M52 100H78" stroke="#111111" stroke-width="8" stroke-linecap="round"/>
+  <path d="M86 104L96 114L112 92" stroke="#111111" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <text x="162" y="96" fill="#111111" font-family="Titillium Web, Segoe UI, Arial, sans-serif" font-size="56" font-weight="700" letter-spacing="0.5">CivicLeave</text>
+</svg>
