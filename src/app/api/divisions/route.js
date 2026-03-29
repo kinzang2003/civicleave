@@ -2,17 +2,23 @@ import { NextResponse } from "next/server";
 import Division from "@/models/Division";
 import Department from "@/models/Department";
 import mongoose from "mongoose";
-import clientPromise from "@/lib/mongodb"; // your working mongodb.tsx
+import clientPromise, { DATABASE_NAME } from "@/lib/mongodb"; // your working mongodb.tsx
 
 // ================== ENSURE MONGOOSE CONNECTION ==================
 async function ensureMongoose() {
+  const targetDbName = DATABASE_NAME;
+
+  if (mongoose.connection.readyState && mongoose.connection.name !== targetDbName) {
+    await mongoose.disconnect();
+  }
+
   if (!mongoose.connection.readyState) {
     try {
       const client = await clientPromise;
       await mongoose.connect(client.s.url, {
-        dbName: "e_sign_db",
+        dbName: targetDbName,
       });
-      console.log("✅ Mongoose connected to e_sign_db");
+      console.log(`✅ Mongoose connected to ${targetDbName}`);
     } catch (err) {
       console.error("❌ Mongoose connection error:", err);
       throw err;

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
     const user = await db.collection("users").findOne({ _id: new ObjectId(userId) });
 
     if (!user || !user.loginOtp) {

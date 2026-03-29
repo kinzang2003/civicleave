@@ -15,7 +15,7 @@ export async function GET(req: Request) {
 
     // 🔌 2️⃣ Connect DB
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     // 📦 3️⃣ Fetch Users
     const allUsers = await db
@@ -40,7 +40,7 @@ export async function GET(req: Request) {
 
       return {
         _id: u._id.toString(),
-        firstName: u.firstName || u.name || "-",
+        name: u.name || u.name || "-",
         cid: u.cid || "-",
         designation: u.designation || "-",
         phone: u.phone || "-",

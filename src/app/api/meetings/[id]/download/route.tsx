@@ -22,7 +22,7 @@ function auth(req: Request): { id: string } | null {
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const user = auth(req);
@@ -34,11 +34,14 @@ export async function POST(
     const meetingId = id;
 
     if (!ObjectId.isValid(meetingId)) {
-      return NextResponse.json({ error: "Invalid meeting ID" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid meeting ID" },
+        { status: 400 },
+      );
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     // Fetch the meeting with all signature data
     const meeting = await db.collection("meetings").findOne({
@@ -51,18 +54,23 @@ export async function POST(
 
     // Check if user has access
     const { userIdStr, organizerIdQuery } = getUserIdVariants(user.id);
-    const userDoc = await db.collection("users").findOne({ _id: new ObjectId(userIdStr) });
+    const userDoc = await db
+      .collection("users")
+      .findOne({ _id: new ObjectId(userIdStr) });
     if (!userDoc) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     const userEmail = userDoc.email?.toLowerCase();
-    const isOrganizer = 
-      (typeof meeting.organizerId === 'string' && meeting.organizerId === userIdStr) ||
-      (meeting.organizerId instanceof ObjectId && meeting.organizerId.toString() === userIdStr) ||
-      (typeof meeting.organizerId === 'object' && meeting.organizerId?.toString() === userIdStr);
+    const isOrganizer =
+      (typeof meeting.organizerId === "string" &&
+        meeting.organizerId === userIdStr) ||
+      (meeting.organizerId instanceof ObjectId &&
+        meeting.organizerId.toString() === userIdStr) ||
+      (typeof meeting.organizerId === "object" &&
+        meeting.organizerId?.toString() === userIdStr);
     const isParticipant = meeting.participants?.some(
-      (p: any) => p.email?.toLowerCase() === userEmail
+      (p: any) => p.email?.toLowerCase() === userEmail,
     );
 
     if (!isOrganizer && !isParticipant) {
@@ -74,7 +82,7 @@ export async function POST(
       process.cwd(),
       "public",
       "uploads",
-      String(meeting.storedFileName)
+      String(meeting.storedFileName),
     );
 
     const originalPdfBytes = await readFile(pdfPath);
@@ -90,37 +98,47 @@ export async function POST(
       const { width: pageWidth, height: pageHeight } = page.getSize();
 
       // Find the participant who owns this field
-      const fieldRecipient = field.recipientName?.toLowerCase() || '';
+      const fieldRecipient = field.recipientName?.toLowerCase() || "";
       const fieldOwner = meeting.participants?.find((p: any) => {
-        const pName = p.name?.toLowerCase() || '';
-        const pEmail = p.email?.toLowerCase() || '';
-        return fieldRecipient === pName || fieldRecipient === pEmail ||
-               pName.includes(fieldRecipient) || fieldRecipient.includes(pName);
+        const pName = p.name?.toLowerCase() || "";
+        const pEmail = p.email?.toLowerCase() || "";
+        return (
+          fieldRecipient === pName ||
+          fieldRecipient === pEmail ||
+          pName.includes(fieldRecipient) ||
+          fieldRecipient.includes(pName)
+        );
       });
 
       if (!fieldOwner?.signed) continue;
 
       // Calculate position (PDF coordinates start from bottom-left)
       const x = field.xPct * pageWidth;
-      const y = pageHeight - (field.yPct * pageHeight) - (field.hPct * pageHeight);
+      const y = pageHeight - field.yPct * pageHeight - field.hPct * pageHeight;
       const width = field.wPct * pageWidth;
       const height = field.hPct * pageHeight;
 
-      if (field.type === 'signature' && fieldOwner.signature) {
+      if (field.type === "signature" && fieldOwner.signature) {
         try {
           // Embed signature image
-          const base64Data = fieldOwner.signature.split(',')[1];
+          const base64Data = fieldOwner.signature.split(",")[1];
           if (!base64Data) {
-            console.error('Invalid signature base64 data');
+            console.error("Invalid signature base64 data");
             continue;
           }
-          
-          const imageBytes = Buffer.from(base64Data, 'base64');
-          
+
+          const imageBytes = Buffer.from(base64Data, "base64");
+
           let image;
-          if (fieldOwner.signature.includes('image/png') || fieldOwner.signature.includes('data:image/png')) {
+          if (
+            fieldOwner.signature.includes("image/png") ||
+            fieldOwner.signature.includes("data:image/png")
+          ) {
             image = await pdfDoc.embedPng(imageBytes);
-          } else if (fieldOwner.signature.includes('image/jpeg') || fieldOwner.signature.includes('image/jpg')) {
+          } else if (
+            fieldOwner.signature.includes("image/jpeg") ||
+            fieldOwner.signature.includes("image/jpg")
+          ) {
             image = await pdfDoc.embedJpg(imageBytes);
           } else {
             // Default to PNG
@@ -134,17 +152,17 @@ export async function POST(
             height,
           });
         } catch (err) {
-          console.error('Error embedding signature for field:', field.id, err);
+          console.error("Error embedding signature for field:", field.id, err);
         }
-      } else if (field.type === 'name') {
+      } else if (field.type === "name") {
         // Draw name text
         const fontSize = height * 0.6; // Adjust font size based on field height
-        page.drawText(fieldOwner.name || '', {
+        page.drawText(fieldOwner.name || "", {
           x: x + 5,
           y: y + (height - fontSize) / 2,
           size: Math.max(8, Math.min(fontSize, 20)),
         });
-      } else if (field.type === 'date') {
+      } else if (field.type === "date") {
         // Draw date text
         const dateStr = new Date(fieldOwner.signedAt).toLocaleDateString();
         const fontSize = height * 0.5;
@@ -158,7 +176,12 @@ export async function POST(
 
     // Also add any freeform signatures (signatures dropped outside fields)
     for (const participant of meeting.participants || []) {
-      if (!participant.signed || !participant.signaturePositions || participant.signaturePositions.length === 0) continue;
+      if (
+        !participant.signed ||
+        !participant.signaturePositions ||
+        participant.signaturePositions.length === 0
+      )
+        continue;
 
       for (const pos of participant.signaturePositions) {
         const pageIndex = pos.page - 1;
@@ -168,16 +191,19 @@ export async function POST(
         const { width: pageWidth, height: pageHeight } = page.getSize();
 
         try {
-          const base64Data = participant.signature.split(',')[1];
+          const base64Data = participant.signature.split(",")[1];
           if (!base64Data) {
-            console.error('Invalid signature data');
+            console.error("Invalid signature data");
             continue;
           }
-          
-          const imageBytes = Buffer.from(base64Data, 'base64');
-          
+
+          const imageBytes = Buffer.from(base64Data, "base64");
+
           let image;
-          if (participant.signature.includes('image/png') || participant.signature.includes('data:image/png')) {
+          if (
+            participant.signature.includes("image/png") ||
+            participant.signature.includes("data:image/png")
+          ) {
             image = await pdfDoc.embedPng(imageBytes);
           } else {
             image = await pdfDoc.embedJpg(imageBytes);
@@ -186,26 +212,26 @@ export async function POST(
           // Freeform signatures use percentage-based coordinates
           // Check if coordinates are percentages (< 2) or pixels (> 2)
           const isPercentage = pos.x < 2 && pos.y < 2;
-          
+
           let x, y, width, height;
           if (isPercentage) {
             // Already percentage-based
             x = pos.x * pageWidth;
-            y = pageHeight - (pos.y * pageHeight) - (pos.height * pageHeight);
+            y = pageHeight - pos.y * pageHeight - pos.height * pageHeight;
             width = pos.width * pageWidth;
             height = pos.height * pageHeight;
           } else {
             // Pixel-based - need to scale from 700px width (standard rendering width)
             const scale = pageWidth / 700;
             x = pos.x * scale;
-            y = pageHeight - (pos.y * scale) - (pos.height * scale);
+            y = pageHeight - pos.y * scale - pos.height * scale;
             width = pos.width * scale;
             height = pos.height * scale;
           }
 
           page.drawImage(image, { x, y, width, height });
         } catch (err) {
-          console.error('Error embedding freeform signature:', err);
+          console.error("Error embedding freeform signature:", err);
         }
       }
     }
@@ -217,14 +243,14 @@ export async function POST(
     return new NextResponse(Buffer.from(pdfBytes), {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${meeting.title || 'document'}.pdf"`,
+        "Content-Disposition": `attachment; filename="${meeting.title || "document"}.pdf"`,
       },
     });
   } catch (err: any) {
     console.error("DOWNLOAD ERROR:", err);
     return NextResponse.json(
       { error: err.message || "Server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

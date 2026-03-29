@@ -42,7 +42,22 @@ function buildIdQueryVariants(value: string): unknown[] {
 }
 
 function displayName(user: any): string {
-  return user?.firstName || user?.name || user?.email || "Approver";
+  return user?.name || user?.name || user?.email || "Approver";
+}
+
+export function normalizeRole(role: string | undefined): string {
+  const normalized = (role || "Officer").toLowerCase().replace(/[\s_-]/g, "");
+  const roleMap: Record<string, string> = {
+    officer: "Officer",
+    divisionhead: "DivisionHead",
+    departmenthead: "DepartmentHead",
+    commissioner: "Commissioner",
+    chairperson: "Chairperson",
+    secretaryservice: "SecretaryService",
+    admin: "Admin",
+  };
+
+  return roleMap[normalized] || "Officer";
 }
 
 type LeaveWindow = {
@@ -145,7 +160,7 @@ async function findAdmin(db: DbLike, applicantId: string) {
 }
 
 export function isLeaveApproverRole(role: string | undefined): boolean {
-  const normalized = (role || "Officer").trim();
+  const normalized = normalizeRole(role);
   return [
     "DivisionHead",
     "DepartmentHead",
@@ -186,7 +201,7 @@ export async function resolveApproverForApplicant(
   leaveWindow: LeaveWindow = {},
 ) {
   const applicantId = normalizeId(applicantUser?._id);
-  const role = (applicantUser?.role || "Officer").trim();
+  const role = normalizeRole(applicantUser?.role);
   const departmentId = normalizeId(applicantUser?.departmentId);
   const divisionId = normalizeId(applicantUser?.divisionId);
 

@@ -9,13 +9,13 @@ export const runtime = "nodejs";
 type FieldType = "signature" | "name" | "date";
 
 type Field = {
-  id: string;           // keep id so UI can remove/update reliably
+  id: string; // keep id so UI can remove/update reliably
   type: FieldType;
-  page: number;         // 1-based page index
-  xPct: number;         // 0..1
-  yPct: number;         // 0..1
-  wPct: number;         // 0..1
-  hPct: number;         // 0..1
+  page: number; // 1-based page index
+  xPct: number; // 0..1
+  yPct: number; // 0..1
+  wPct: number; // 0..1
+  hPct: number; // 0..1
   recipientName?: string; // Name of recipient this field is assigned to
 };
 
@@ -40,7 +40,10 @@ function isFieldType(t: any): t is FieldType {
 function normalizeField(raw: any): Field | null {
   if (!raw || typeof raw !== "object") return null;
 
-  const id = typeof raw.id === "string" && raw.id.length > 0 ? raw.id : crypto.randomUUID();
+  const id =
+    typeof raw.id === "string" && raw.id.length > 0
+      ? raw.id
+      : crypto.randomUUID();
 
   const page = Number(raw.page);
   const xPct = Number(raw.xPct);
@@ -62,30 +65,41 @@ function normalizeField(raw: any): Field | null {
     yPct: clamp01(yPct),
     wPct: clamp01(wPct),
     hPct: clamp01(hPct),
-    recipientName: typeof raw.recipientName === 'string' ? raw.recipientName : undefined,
+    recipientName:
+      typeof raw.recipientName === "string" ? raw.recipientName : undefined,
   };
 }
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const user = requireUser(req);
-    if (!user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user?.id)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
     if (!ObjectId.isValid(id)) {
-      return NextResponse.json({ error: "Invalid meeting id" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid meeting id" },
+        { status: 400 },
+      );
     }
 
     const { organizerIdQuery } = getUserIdVariants(user.id);
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
-    const meeting = await db.collection("meetings").findOne(
-      { _id: new ObjectId(id), organizerId: organizerIdQuery },
-      { projection: { fields: 1 } }
-    );
+    const meeting = await db
+      .collection("meetings")
+      .findOne(
+        { _id: new ObjectId(id), organizerId: organizerIdQuery },
+        { projection: { fields: 1 } },
+      );
 
-    if (!meeting) return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+    if (!meeting)
+      return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
 
     return NextResponse.json({ fields: (meeting as any).fields || [] });
   } catch (err) {
@@ -94,36 +108,52 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const user = requireUser(req);
-    if (!user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user?.id)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
     if (!ObjectId.isValid(id)) {
-      return NextResponse.json({ error: "Invalid meeting id" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid meeting id" },
+        { status: 400 },
+      );
     }
 
     const body = await req.json().catch(() => null);
     if (!body || !Array.isArray(body.fields)) {
-      return NextResponse.json({ error: "fields must be an array" }, { status: 400 });
+      return NextResponse.json(
+        { error: "fields must be an array" },
+        { status: 400 },
+      );
     }
 
     const normalized: Field[] = [];
     for (const f of body.fields) {
       const n = normalizeField(f);
-      if (!n) return NextResponse.json({ error: "Invalid field payload" }, { status: 400 });
+      if (!n)
+        return NextResponse.json(
+          { error: "Invalid field payload" },
+          { status: 400 },
+        );
       normalized.push(n);
     }
 
     const { organizerIdQuery } = getUserIdVariants(user.id);
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
-    const result = await db.collection("meetings").updateOne(
-      { _id: new ObjectId(id), organizerId: organizerIdQuery },
-      { $set: { fields: normalized, updatedAt: new Date() } }
-    );
+    const result = await db
+      .collection("meetings")
+      .updateOne(
+        { _id: new ObjectId(id), organizerId: organizerIdQuery },
+        { $set: { fields: normalized, updatedAt: new Date() } },
+      );
 
     if (result.matchedCount === 0) {
       return NextResponse.json({ error: "Meeting not found" }, { status: 404 });

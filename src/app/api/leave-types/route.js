@@ -5,7 +5,7 @@ import { ObjectId } from "mongodb"; // ⚡ important
 export async function GET() {
   try {
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     const leaveTypes = await db
       .collection("leave-types")
@@ -25,7 +25,7 @@ export async function GET() {
 export async function POST(req) {
   try {
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     const body = await req.json();
 
@@ -73,7 +73,7 @@ export async function POST(req) {
 export async function PUT(req) {
   try {
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     const { _id, name, remarks } = await req.json();
 
@@ -119,7 +119,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
   try {
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     const { _id } = await req.json();
 

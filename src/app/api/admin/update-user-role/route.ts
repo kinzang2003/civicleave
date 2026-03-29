@@ -1,24 +1,31 @@
 import { NextResponse } from "next/server";
 import { connectToDatabase } from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-import jwt from "jsonwebtoken";
+import { verifyAdmin } from "@/lib/admin-auth";
+
+function normalizeRole(rawRole: string): string {
+  const normalized = (rawRole || "Officer").toLowerCase().replace(/[\s_-]/g, "");
+  const roleMap: Record<string, string> = {
+    officer: "Officer",
+    divisionhead: "DivisionHead",
+    departmenthead: "DepartmentHead",
+    commissioner: "Commissioner",
+    chairperson: "Chairperson",
+    secretaryservice: "SecretaryService",
+  };
+
+  return roleMap[normalized] || "";
+}
 
 export async function POST(req: Request) {
   try {
-    // 🔐 1️⃣ Verify Token
-    const authHeader = req.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const adminCheck = await verifyAdmin(req);
+    if (!adminCheck.valid) {
+      return NextResponse.json({ error: adminCheck.error || "Unauthorized" }, { status: 403 });
     }
 
-    const token = authHeader.split(" ")[1];
-    const decoded: any = jwt.verify(token, process.env.JWT_SECRET!);
-
-    if (!decoded.isAdmin) {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
-    }
-
-    const { userId, role } = await req.json();
+    const { userId, role: rawRole } = await req.json();
+    const role = normalizeRole(rawRole);
 
     if (!userId || !role) {
       return NextResponse.json({ error: "Missing data" }, { status: 400 });

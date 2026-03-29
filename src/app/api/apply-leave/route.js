@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import jwt from "jsonwebtoken";
 import { ObjectId } from "mongodb";
-import { resolveApproverForApplicant } from "@/lib/leave-approval";
+import { normalizeRole, resolveApproverForApplicant } from "@/lib/leave-approval";
 
 const getYear = () => new Date().getFullYear();
 
@@ -69,14 +69,14 @@ export async function GET(req) {
     const userId = getUserIdFromAuth(req);
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     const requester = await db.collection("users").findOne({ _id: new ObjectId(userId) });
     if (!requester) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const requesterRole = (requester.role || "Officer").trim();
+    const requesterRole = normalizeRole(requester.role);
     const requesterDepartmentId = normalizeId(requester.departmentId);
     const requesterDivisionId = normalizeId(requester.divisionId);
 
@@ -116,7 +116,7 @@ export async function GET(req) {
     const userNameMap = new Map(
       usersInScope.map((u) => [
         normalizeId(u._id),
-        u.firstName || u.name || u.email || "-",
+        u.name || u.name || u.email || "-",
       ])
     );
 
@@ -187,7 +187,7 @@ export async function POST(req) {
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     const year = getYear();
     const userObjectId = new ObjectId(userId);
@@ -234,7 +234,7 @@ export async function POST(req) {
 
     await db.collection("leave_applications").insertOne({
       userId,
-      userName: applicantUser.firstName || applicantUser.name || applicantUser.email || "",
+      userName: applicantUser.name || applicantUser.name || applicantUser.email || "",
       applicantRole: applicantUser.role || "Officer",
       departmentId: applicantUser.departmentId || "",
       divisionId: applicantUser.divisionId || "",

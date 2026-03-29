@@ -4,7 +4,7 @@ import "@radix-ui/themes/styles.css";
 import { Theme } from "@radix-ui/themes";
 
 export const metadata: Metadata = {
-  title: "ACC E-Sign",
+  title: "CivicLeave",
   description: "E-sign platform",
 };
 

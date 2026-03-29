@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
+import clientPromise, { DATABASE_NAME } from "@/lib/mongodb";
 import { verifyAdmin } from "@/lib/admin-auth";
 
 function normalizeId(value: unknown): string {
@@ -30,14 +30,14 @@ export async function GET(req: Request) {
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db(DATABASE_NAME);
 
     const [departments, commissioners, assignments] = await Promise.all([
       db.collection("departments").find({}).sort({ name: 1 }).toArray(),
       db
         .collection("users")
         .find({ role: "Commissioner", isActive: { $ne: false } })
-        .sort({ firstName: 1, name: 1 })
+        .sort({ name: 1 })
         .toArray(),
       db.collection("commissioner_assignments").find({}).toArray(),
     ]);
@@ -58,13 +58,13 @@ export async function GET(req: Request) {
         departmentName: dept.name || "-",
         commissionerId,
         commissionerName:
-          commissioner?.firstName || commissioner?.name || commissioner?.email || "Unassigned",
+          commissioner?.name || commissioner?.name || commissioner?.email || "Unassigned",
       };
     });
 
     const commissionerOptions = commissioners.map((c) => ({
       _id: normalizeId(c._id),
-      name: c.firstName || c.name || c.email || "Commissioner",
+      name: c.name || c.name || c.email || "Commissioner",
       email: c.email || "",
     }));
 
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db(DATABASE_NAME);
 
     const [department, commissioner] = await Promise.all([
       db.collection("departments").findOne({ _id: parsedDepartmentId }),

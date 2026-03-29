@@ -16,7 +16,6 @@ function requireJwtSecret() {
   return secret;
 }
 
-
 function createTransporter() {
   return nodemailer.createTransport({
     host: "smtp.gmail.com",
@@ -29,10 +28,9 @@ function createTransporter() {
   });
 }
 
-
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const token = getBearerToken(req);
@@ -45,26 +43,41 @@ export async function POST(
     const meetingId = id;
 
     if (!ObjectId.isValid(meetingId)) {
-      return NextResponse.json({ error: "Invalid meeting ID" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid meeting ID" },
+        { status: 400 },
+      );
     }
 
     const { signature, signaturePositions } = await req.json();
 
     // Validate signature is not empty
-    if (!signature || typeof signature !== 'string' || signature.trim().length === 0) {
-      return NextResponse.json({ error: "Valid signature is required" }, { status: 400 });
+    if (
+      !signature ||
+      typeof signature !== "string" ||
+      signature.trim().length === 0
+    ) {
+      return NextResponse.json(
+        { error: "Valid signature is required" },
+        { status: 400 },
+      );
     }
 
     // Additional validation - check if it looks like a data URL
-    if (!signature.startsWith('data:image/')) {
-      return NextResponse.json({ error: "Invalid signature format" }, { status: 400 });
+    if (!signature.startsWith("data:image/")) {
+      return NextResponse.json(
+        { error: "Invalid signature format" },
+        { status: 400 },
+      );
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     // Get user info
-    const user = await db.collection("users").findOne({ _id: new ObjectId(decoded.id) });
+    const user = await db
+      .collection("users")
+      .findOne({ _id: new ObjectId(decoded.id) });
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
@@ -80,13 +93,13 @@ export async function POST(
 
     // Find current user in participants
     const participantIndex = meeting.participants.findIndex(
-      (p: any) => p.email.toLowerCase() === user.email.toLowerCase()
+      (p: any) => p.email.toLowerCase() === user.email.toLowerCase(),
     );
 
     if (participantIndex === -1) {
       return NextResponse.json(
         { error: "You are not a participant in this document" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -96,7 +109,7 @@ export async function POST(
     if (participant.signed) {
       return NextResponse.json(
         { error: "You have already signed this document" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -104,7 +117,7 @@ export async function POST(
     if (participant.role === "Signer" && !participant.isCurrent) {
       return NextResponse.json(
         { error: "It's not your turn to sign yet" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -112,14 +125,17 @@ export async function POST(
     meeting.participants[participantIndex].signed = true;
     meeting.participants[participantIndex].signedAt = new Date();
     meeting.participants[participantIndex].signature = signature;
-    meeting.participants[participantIndex].signaturePositions = signaturePositions || [];
+    meeting.participants[participantIndex].signaturePositions =
+      signaturePositions || [];
     meeting.participants[participantIndex].isCurrent = false;
 
     // Find next signer
-    const signers = meeting.participants.filter((p: any) => p.role === "Signer");
+    const signers = meeting.participants.filter(
+      (p: any) => p.role === "Signer",
+    );
     const currentSignerOrder = participant.order || 0;
     const nextSigner = signers.find(
-      (p: any) => !p.signed && p.order > currentSignerOrder
+      (p: any) => !p.signed && p.order > currentSignerOrder,
     );
 
     let allSigned = false;
@@ -128,7 +144,7 @@ export async function POST(
     if (nextSigner) {
       // Set next signer as current
       const nextIndex = meeting.participants.findIndex(
-        (p: any) => p.email === nextSigner.email
+        (p: any) => p.email === nextSigner.email,
       );
       meeting.participants[nextIndex].isCurrent = true;
 
@@ -142,7 +158,7 @@ export async function POST(
             currentSignerIndex: nextIndex,
             updatedAt: new Date(),
           },
-        }
+        },
       );
 
       // Fetch organizer details for email
@@ -156,7 +172,8 @@ export async function POST(
       try {
         const transporter = createTransporter();
         const signingUrl = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/sign/${meetingId}?email=${encodeURIComponent(nextSigner.email)}`;
-        const previousSignerName = participant.name || user.name || "A participant";
+        const previousSignerName =
+          participant.name || user.name || "A participant";
 
         await transporter.sendMail({
           from: process.env.EMAIL_USER,
@@ -169,7 +186,7 @@ export async function POST(
               <p>${previousSignerName} has signed the document. It's now your turn to sign:</p>
               <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <strong>Document:</strong> ${meeting.title}<br>
-                <strong>From:</strong> ${organizerName}${organizerEmail ? ` (${organizerEmail})` : ''}<br>
+                <strong>From:</strong> ${organizerName}${organizerEmail ? ` (${organizerEmail})` : ""}<br>
                 <strong>Sent via:</strong> <span style="color: #6B7280;">E-Sign App</span>
               </div>
               <div style="margin: 30px 0;">
@@ -186,10 +203,10 @@ export async function POST(
     } else {
       // All signers have signed
       allSigned = signers.every((s: any) => s.signed);
-      
+
       if (allSigned) {
         meetingStatus = "Completed";
-                // Update meeting status to Completed
+        // Update meeting status to Completed
         await db.collection("meetings").updateOne(
           { _id: new ObjectId(meetingId) },
           {
@@ -198,9 +215,9 @@ export async function POST(
               status: meetingStatus,
               updatedAt: new Date(),
             },
-          }
+          },
         );
-                // Send completion email to organizer
+        // Send completion email to organizer
         try {
           const organizer = await db.collection("users").findOne({
             _id: new ObjectId(meeting.organizerId),
@@ -217,7 +234,7 @@ export async function POST(
               html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                   <h2 style="color: #10B981;">Document Fully Signed!</h2>
-                  <p>Hello ${organizer?.name || 'there'},</p>
+                  <p>Hello ${organizer?.name || "there"},</p>
                   <p>Great news! All participants have signed your document:</p>
                   <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                     <strong>Document:</strong> ${meeting.title}
@@ -245,7 +262,7 @@ export async function POST(
               status: meetingStatus,
               updatedAt: new Date(),
             },
-          }
+          },
         );
       }
     }
@@ -260,7 +277,7 @@ export async function POST(
     console.error("SIGN ERROR:", err);
     return NextResponse.json(
       { error: err.message || "Server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

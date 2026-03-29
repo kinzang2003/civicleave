@@ -43,32 +43,41 @@ function safeRange(range: string, size: number) {
 async function getMeetingPdfInfo(meetingId: string, userId: string) {
   try {
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     // Find meeting and check if user is organizer or participant
-    const meeting = await db.collection("meetings").findOne(
-      { _id: new ObjectId(meetingId) },
-      { projection: { storedFileName: 1, organizerId: 1, participants: 1 } }
-    );
+    const meeting = await db
+      .collection("meetings")
+      .findOne(
+        { _id: new ObjectId(meetingId) },
+        { projection: { storedFileName: 1, organizerId: 1, participants: 1 } },
+      );
 
     if (!meeting) return null;
 
     // Check if user is authorized (organizer or participant)
     // Handle both string and ObjectId formats for organizerId
     const { userIdStr } = getUserIdVariants(userId);
-    const isOrganizer = 
-      (typeof meeting.organizerId === 'string' && meeting.organizerId === userIdStr) ||
-      (meeting.organizerId instanceof ObjectId && meeting.organizerId.toString() === userIdStr) ||
-      (typeof meeting.organizerId === 'object' && meeting.organizerId?.toString() === userIdStr);
+    const isOrganizer =
+      (typeof meeting.organizerId === "string" &&
+        meeting.organizerId === userIdStr) ||
+      (meeting.organizerId instanceof ObjectId &&
+        meeting.organizerId.toString() === userIdStr) ||
+      (typeof meeting.organizerId === "object" &&
+        meeting.organizerId?.toString() === userIdStr);
 
     // Get user to check email for participant access
-    const user = await db.collection("users").findOne({ _id: new ObjectId(userIdStr) });
+    const user = await db
+      .collection("users")
+      .findOne({ _id: new ObjectId(userIdStr) });
     if (!user) return null;
 
     const userEmail = user.email?.toLowerCase();
-    const hasAccess = isOrganizer || meeting.participants?.some(
-      (p: any) => p.email?.toLowerCase() === userEmail
-    );
+    const hasAccess =
+      isOrganizer ||
+      meeting.participants?.some(
+        (p: any) => p.email?.toLowerCase() === userEmail,
+      );
 
     if (!hasAccess) return null;
 
@@ -78,16 +87,16 @@ async function getMeetingPdfInfo(meetingId: string, userId: string) {
       process.cwd(),
       "public",
       "uploads",
-      String(meeting.storedFileName)
+      String(meeting.storedFileName),
     );
 
     try {
       const s = await stat(absolute);
       return { absolute, size: s.size };
     } catch (statError: any) {
-      if (statError.code === 'ENOENT') {
+      if (statError.code === "ENOENT") {
         console.error(`PDF file not found: ${absolute}`);
-        return { error: 'FILE_MISSING' };
+        return { error: "FILE_MISSING" };
       }
       throw statError;
     }
@@ -97,7 +106,10 @@ async function getMeetingPdfInfo(meetingId: string, userId: string) {
   }
 }
 
-export async function HEAD(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function HEAD(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const user = auth(req);
     if (!user?.id) {
@@ -113,8 +125,11 @@ export async function HEAD(req: Request, { params }: { params: Promise<{ id: str
     if (!info) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    if ((info as any).error === 'FILE_MISSING') {
-      return NextResponse.json({ error: "PDF file is missing from server" }, { status: 404 });
+    if ((info as any).error === "FILE_MISSING") {
+      return NextResponse.json(
+        { error: "PDF file is missing from server" },
+        { status: 404 },
+      );
     }
     if (!info.size) {
       return NextResponse.json({ error: "Invalid file" }, { status: 500 });
@@ -135,7 +150,10 @@ export async function HEAD(req: Request, { params }: { params: Promise<{ id: str
   }
 }
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const user = auth(req);
     if (!user?.id) {
@@ -151,8 +169,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     if (!info) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    if ((info as any).error === 'FILE_MISSING') {
-      return NextResponse.json({ error: "PDF file is missing from server" }, { status: 404 });
+    if ((info as any).error === "FILE_MISSING") {
+      return NextResponse.json(
+        { error: "PDF file is missing from server" },
+        { status: 404 },
+      );
     }
     if (!info.size) {
       return NextResponse.json({ error: "Invalid file" }, { status: 500 });
@@ -202,11 +223,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     });
   } catch (error) {
     console.error("GET error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const user = auth(req);
     if (!user?.id) {
@@ -222,8 +249,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (!info) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
-    if ((info as any).error === 'FILE_MISSING') {
-      return NextResponse.json({ error: "PDF file is missing from server" }, { status: 404 });
+    if ((info as any).error === "FILE_MISSING") {
+      return NextResponse.json(
+        { error: "PDF file is missing from server" },
+        { status: 404 },
+      );
     }
     if (!info.size) {
       return NextResponse.json({ error: "Invalid file" }, { status: 500 });
@@ -242,6 +272,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     });
   } catch (error) {
     console.error("POST error:", error);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

@@ -36,7 +36,7 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo");
 
-  const [firstName, setFirstName] = useState("");
+  const [name, setName] = useState("");
   const [cid, setCid] = useState("");
   const [designation, setDesignation] = useState("");
   const [phone, setPhone] = useState("");
@@ -132,7 +132,7 @@ function SignupForm() {
     }
 
     if (
-      !firstName ||
+      !name ||
       !cid ||
       !designation ||
       !phone ||
@@ -149,7 +149,7 @@ function SignupForm() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          firstName,
+          name,
           cid,
           designation,
           phone,
@@ -199,9 +199,9 @@ function SignupForm() {
 
           <input
             type="text"
-            placeholder="First Name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            placeholder="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
             className="p-3 border border-gray-300 rounded-md focus:outline-none focus:border-black transition"
           />
 
@@ -284,6 +284,8 @@ function SignupForm() {
 
           <input
             type="password"
+            name="newPassword"
+            autoComplete="new-password"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -292,6 +294,8 @@ function SignupForm() {
 
           <input
             type="password"
+            name="confirmNewPassword"
+            autoComplete="new-password"
             placeholder="Confirm Password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}

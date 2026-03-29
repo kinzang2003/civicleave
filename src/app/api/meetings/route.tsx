@@ -37,14 +37,16 @@ function requireJwtSecret() {
 
 function requireUserId(decoded: any) {
   const id = decoded?.id;
-  if (!id || typeof id !== "string") throw new Error("Invalid token payload: missing id");
+  if (!id || typeof id !== "string")
+    throw new Error("Invalid token payload: missing id");
   return new ObjectId(id);
 }
 
 export async function GET(req: Request) {
   try {
     const token = getBearerToken(req);
-    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!token)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     let decoded: any;
     try {
@@ -57,7 +59,7 @@ export async function GET(req: Request) {
     const { organizerIdQuery } = getUserIdVariants(decoded.id);
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     // Get user's email for participant matching
     const usersDb = db.collection("users");
@@ -76,9 +78,9 @@ export async function GET(req: Request) {
     if (userEmail) {
       participantMeetings = await db
         .collection("meetings")
-        .find({ 
+        .find({
           "participants.email": userEmail,
-          organizerId: { $nin: [new ObjectId(decoded.id), decoded.id] } // Exclude if also organizer
+          organizerId: { $nin: [new ObjectId(decoded.id), decoded.id] }, // Exclude if also organizer
         })
         .sort({ createdAt: -1 })
         .toArray();
@@ -87,9 +89,9 @@ export async function GET(req: Request) {
     // Combine both lists
     const allMeetings = [...organizedMeetings, ...participantMeetings];
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       meetings: allMeetings,
-      userEmail // Include for client-side filtering if needed
+      userEmail, // Include for client-side filtering if needed
     });
   } catch (err) {
     console.error("MEETINGS GET ERROR:", err);
@@ -100,7 +102,8 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const token = getBearerToken(req);
-    if (!token) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!token)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     let decoded: any;
     try {
@@ -117,23 +120,35 @@ export async function POST(req: Request) {
     const dataRaw = formData.get("data");
     const file = formData.get("file") as File | null;
 
-    if (!dataRaw) return NextResponse.json({ error: "Missing data" }, { status: 400 });
-    if (!file) return NextResponse.json({ error: "Missing file" }, { status: 400 });
+    if (!dataRaw)
+      return NextResponse.json({ error: "Missing data" }, { status: 400 });
+    if (!file)
+      return NextResponse.json({ error: "Missing file" }, { status: 400 });
 
     if (!allowedMimeTypes.has(file.type)) {
-      return NextResponse.json({ error: "Only PDF or Word documents allowed" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Only PDF or Word documents allowed" },
+        { status: 400 },
+      );
     }
 
     let data: any;
     try {
       data = JSON.parse(String(dataRaw));
     } catch {
-      return NextResponse.json({ error: "Invalid JSON in data" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid JSON in data" },
+        { status: 400 },
+      );
     }
 
     const { title, description, participants, action, date } = data;
 
-    if (!title?.trim() || !description?.trim() || !Array.isArray(participants)) {
+    if (
+      !title?.trim() ||
+      !description?.trim() ||
+      !Array.isArray(participants)
+    ) {
       return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
     }
 
@@ -146,14 +161,20 @@ export async function POST(req: Request) {
     }));
 
     if (cleanedParticipants.some((p: any) => !p.name || !p.email)) {
-      return NextResponse.json({ error: "Each participant must have name and email" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Each participant must have name and email" },
+        { status: 400 },
+      );
     }
 
     // Prevent duplicate emails
     const emails = cleanedParticipants.map((p: any) => p.email.toLowerCase());
     const unique = new Set(emails);
     if (unique.size !== emails.length) {
-      return NextResponse.json({ error: "Duplicate participant emails" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Duplicate participant emails" },
+        { status: 400 },
+      );
     }
 
     // Ensure upload directory exists
@@ -173,7 +194,7 @@ export async function POST(req: Request) {
 
     // Save record in MongoDB
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     const status = action === "prepare" ? "Prepared" : "Draft";
 
@@ -193,11 +214,15 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({
-      message: status === "Prepared" ? "Meeting prepared" : "Meeting saved as draft",
+      message:
+        status === "Prepared" ? "Meeting prepared" : "Meeting saved as draft",
       meetingId: result.insertedId.toString(),
     });
   } catch (err) {
     console.error("MEETING API ERROR:", err);
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 },
+    );
   }
 }

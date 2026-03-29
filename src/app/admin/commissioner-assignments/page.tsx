@@ -57,6 +57,14 @@ export default function CommissionerAssignmentsPage() {
       }
 
       const data = await res.json();
+      if (!res.ok) {
+        setRows([]);
+        setCommissioners([]);
+        setSelectedByDepartment({});
+        setMessage(data?.error || "Failed to load commissioner assignments");
+        return;
+      }
+
       const assignments = Array.isArray(data?.assignments)
         ? data.assignments
         : [];

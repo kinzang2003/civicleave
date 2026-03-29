@@ -18,8 +18,8 @@ function createTransporter() {
 export async function POST(req: Request) {
   try {
     const {
-      firstName,
-      cid,          // <-- fixed here
+      name,
+      cid, // <-- fixed here
       designation,
       phone,
       email,
@@ -30,7 +30,7 @@ export async function POST(req: Request) {
 
     // ===== Validation =====
     if (
-      !firstName ||
+      !name ||
       !cid ||
       !designation ||
       !phone ||
@@ -41,32 +41,33 @@ export async function POST(req: Request) {
     ) {
       return NextResponse.json(
         { error: "All fields are required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
     const users = db.collection("users");
 
     const existingUser = await users.findOne({ email });
     if (existingUser) {
       return NextResponse.json(
         { error: "Email already registered" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = {
-      firstName,
-      cid,           // <-- save lowercase
+      name,
+      cid, // <-- save lowercase
       designation,
       phone,
       email,
       departmentId,
       divisionId,
+      role: "Officer",
       password: hashedPassword,
       isAdmin: false,
       approvalStatus: "pending",
@@ -85,7 +86,7 @@ export async function POST(req: Request) {
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #2563eb;">Registration Received</h2>
-            <p>Hi ${firstName},</p>
+            <p>Hi ${name},</p>
             <p>Your account has been created and is currently <strong>pending approval</strong>.</p>
             <p>You will receive an email once an administrator approves your account.</p>
             <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
@@ -106,7 +107,7 @@ export async function POST(req: Request) {
     console.error("Signup error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

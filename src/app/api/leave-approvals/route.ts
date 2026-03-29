@@ -40,7 +40,7 @@ export async function GET(req: Request) {
     const currentUserId = getTokenUserId(req);
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     const currentUser = await db.collection("users").findOne({
       _id: new ObjectId(currentUserId),
@@ -117,7 +117,7 @@ export async function POST(req: Request) {
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     const currentUser = await db.collection("users").findOne({
       _id: new ObjectId(currentUserId),
@@ -161,7 +161,7 @@ export async function POST(req: Request) {
           reviewedById: currentUserId,
           reviewedByRole: currentUser.role || (currentUser.isAdmin ? "Admin" : "Approver"),
           reviewedByName:
-            currentUser.firstName || currentUser.name || currentUser.email || "Approver",
+            currentUser.name || currentUser.name || currentUser.email || "Approver",
           updatedAt: new Date(),
         },
       }

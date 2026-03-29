@@ -33,7 +33,7 @@ function createTransporter() {
 
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const token = getBearerToken(req);
@@ -47,13 +47,16 @@ export async function POST(
     const { organizerIdQuery } = getUserIdVariants(decoded.id);
 
     if (!ObjectId.isValid(meetingId)) {
-      return NextResponse.json({ error: "Invalid meeting ID" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid meeting ID" },
+        { status: 400 },
+      );
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
-    // Fetch the meeting    
+    // Fetch the meeting
     const meeting = await db.collection("meetings").findOne({
       _id: new ObjectId(meetingId),
       organizerId: organizerIdQuery,
@@ -90,12 +93,12 @@ export async function POST(
           currentSignerIndex: 0,
           updatedAt: new Date(),
         },
-      }
+      },
     );
 
     // Send email to first signer only (sequential signing)
     const firstSigner = participants.find((p: any) => p.role === "Signer");
-    
+
     if (firstSigner) {
       try {
         const transporter = createTransporter();
@@ -112,7 +115,7 @@ export async function POST(
               <p>You have been requested to sign the following document:</p>
               <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <strong>Document:</strong> ${meeting.title}<br>
-                <strong>From:</strong> ${organizerName}${organizerEmail ? ` (${organizerEmail})` : ''}<br>
+                <strong>From:</strong> ${organizerName}${organizerEmail ? ` (${organizerEmail})` : ""}<br>
                 <strong>Sent via:</strong> <span style="color: #6B7280;">E-Sign App</span>
               </div>
               <p><strong>Message:</strong></p>
@@ -171,7 +174,7 @@ export async function POST(
               <p>You have been CC'd on the following document:</p>
               <div style="background: #F3F4F6; padding: 15px; border-radius: 8px; margin: 20px 0;">
                 <strong>Document:</strong> ${meeting.title}<br>
-                <strong>From:</strong> ${organizerName}${organizerEmail ? ` (${organizerEmail})` : ''}<br>
+                <strong>From:</strong> ${organizerName}${organizerEmail ? ` (${organizerEmail})` : ""}<br>
                 <strong>Sent via:</strong> <span style="color: #6B7280;">E-Sign App</span>
               </div>
               <p>The document is currently being signed by the participants.</p>
@@ -196,7 +199,7 @@ export async function POST(
     console.error("SEND ERROR:", err);
     return NextResponse.json(
       { error: err.message || "Server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

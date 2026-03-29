@@ -11,7 +11,7 @@ const getYear = () => new Date().getFullYear();
 export async function GET(req) {
  try {
    const client = await clientPromise;
-   const db = client.db("e_sign_db");
+   const db = client.db("civic_leave_db");
    const year = getYear();
 
    const url = new URL(req.url);
@@ -33,6 +33,33 @@ export async function GET(req) {
        userId: parsedUserId,
        year,
      });
+
+      if (!single) {
+        const user = await db.collection("users").findOne({ _id: parsedUserId });
+        const leaves = leaveTypes.map((lt) => ({
+          leaveTypeId: lt._id,
+          leaveTypeName: lt.name,
+          allocated: 0,
+          used: 0,
+          balance: 0,
+        }));
+
+        const insertResult = await db.collection("leave_balances").insertOne({
+          userId: parsedUserId,
+          userName: user?.name || user?.fullName || user?.email || "",
+          year,
+          leaves,
+          remarks: "",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        const created = await db.collection("leave_balances").findOne({
+          _id: insertResult.insertedId,
+        });
+
+        return new Response(JSON.stringify(created || null), { status: 200 });
+      }
 
      if (single) {
        // Sync any leave types added after this record was created
@@ -90,7 +117,7 @@ export async function GET(req) {
 
        const insertResult = await db.collection("leave_balances").insertOne({
          userId: user._id,
-         userName: user.name || user.fullName || user.firstName || "",
+         userName: user.name || user.fullName || user.name || "",
          year,
          leaves,
          remarks: "",
@@ -131,7 +158,7 @@ export async function GET(req) {
      results.push({
        ...record,
        userName:
-         user.name || user.fullName || user.firstName || "No Name",
+         user.name || user.fullName || user.name || "No Name",
      });
    }
 
@@ -153,7 +180,7 @@ export async function GET(req) {
 export async function POST(req) {
  try {
    const client = await clientPromise;
-   const db = client.db("e_sign_db");
+   const db = client.db("civic_leave_db");
 
 
    const allocation = await req.json();
@@ -225,7 +252,7 @@ export async function POST(req) {
        {
          $set: {
            userName:
-             user.name || user.fullName || user.firstName || "",
+             user.name || user.fullName || user.name || "",
            leaves,
            remarks: "",
            updatedAt: new Date(),
@@ -261,7 +288,7 @@ export async function POST(req) {
 export async function PUT(req) {
  try {
    const client = await clientPromise;
-   const db = client.db("e_sign_db");
+   const db = client.db("civic_leave_db");
 
 
    const { _id, leaves, remarks } = await req.json();
@@ -306,7 +333,7 @@ export async function PUT(req) {
 export async function DELETE(req) {
  try {
    const client = await clientPromise;
-   const db = client.db("e_sign_db");
+   const db = client.db("civic_leave_db");
 
 
    const { _id } = await req.json();

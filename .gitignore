@@ -44,14 +44,10 @@ next-env.d.ts
 public/uploads
 
 # documentation and workflow files
-ADMIN_SETUP.md
-WORKFLOW_IMPLEMENTATION.md
-.github/copilot-instructions.md
-TECHNICAL_DOCUMENTATION.md
+.github/
 
 node_modules/
 .env
 .next/
 dist/
 build/
-

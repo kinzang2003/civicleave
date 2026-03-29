@@ -141,92 +141,111 @@ export default function LeaveApprovalsPage() {
           ) : applications.length === 0 ? (
             <Text color="gray">No pending leave requests in your queue.</Text>
           ) : (
-            <Table.Root variant="surface">
-              <Table.Header>
-                <Table.Row>
-                  <Table.ColumnHeaderCell>Applicant</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>
-                    Department / Division
-                  </Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Leave</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Duration</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Remarks</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>
-                  <Table.ColumnHeaderCell>Action</Table.ColumnHeaderCell>
-                </Table.Row>
-              </Table.Header>
-              <Table.Body>
-                {applications.map((item) => (
-                  <Table.Row key={item._id}>
-                    <Table.Cell>
-                      <Text weight="medium">{item.userName || "-"}</Text>
-                      <Text size="1" color="gray">
-                        {item.applicantRole || "Officer"}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text>{item.departmentName || "-"}</Text>
-                      <Text size="1" color="gray">
-                        {item.divisionName || "-"}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text>{item.leaveTypeName || "-"}</Text>
-                      <Text size="1" color="gray">
-                        {item.description || "No description"}
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Text>
-                        {new Date(item.fromDate).toLocaleDateString()} -{" "}
-                        {new Date(item.toDate).toLocaleDateString()}
-                      </Text>
-                      <Text size="1" color="gray">
-                        {item.days} day(s)
-                      </Text>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <TextArea
-                        value={remarksById[item._id] || ""}
-                        onChange={(e) =>
-                          setRemarksById((prev) => ({
-                            ...prev,
-                            [item._id]: e.target.value,
-                          }))
-                        }
-                        placeholder="Optional remarks"
-                        size="1"
-                      />
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Badge color="amber" variant="soft">
-                        Pending
-                      </Badge>
-                    </Table.Cell>
-                    <Table.Cell>
-                      <Flex gap="2">
-                        <Button
-                          size="1"
-                          onClick={() => handleAction(item._id, "approve")}
-                          disabled={processingId === item._id}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          size="1"
-                          color="red"
-                          variant="soft"
-                          onClick={() => handleAction(item._id, "reject")}
-                          disabled={processingId === item._id}
-                        >
-                          Reject
-                        </Button>
-                      </Flex>
-                    </Table.Cell>
+            <div className="overflow-x-auto">
+              <Table.Root variant="surface" style={{ minWidth: 1550 }}>
+                <Table.Header>
+                  <Table.Row>
+                    <Table.ColumnHeaderCell>Applicant</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>Role</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>Department</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>Division</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>Leave Type</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>Start Date</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>End Date</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>No. of Days</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell style={{ minWidth: 260 }}>
+                      Description
+                    </Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell style={{ minWidth: 240 }}>
+                      Remarks
+                    </Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell>Status</Table.ColumnHeaderCell>
+                    <Table.ColumnHeaderCell style={{ minWidth: 170 }}>
+                      Action
+                    </Table.ColumnHeaderCell>
                   </Table.Row>
-                ))}
-              </Table.Body>
-            </Table.Root>
+                </Table.Header>
+                <Table.Body>
+                  {applications.map((item) => (
+                    <Table.Row key={item._id}>
+                      <Table.Cell className="py-3 align-top">
+                        <Text weight="medium">{item.userName || "-"}</Text>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Badge variant="soft" color="gray">
+                          {item.applicantRole || "Officer"}
+                        </Badge>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Text>{item.departmentName || "-"}</Text>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Text>{item.divisionName || "-"}</Text>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Text>{item.leaveTypeName || "-"}</Text>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Text>
+                          {new Date(item.fromDate).toLocaleDateString()}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Text>
+                          {new Date(item.toDate).toLocaleDateString()}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Text>{item.days} day(s)</Text>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Text size="2" color="gray">
+                          {item.description || "No description"}
+                        </Text>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <TextArea
+                          value={remarksById[item._id] || ""}
+                          onChange={(e) =>
+                            setRemarksById((prev) => ({
+                              ...prev,
+                              [item._id]: e.target.value,
+                            }))
+                          }
+                          placeholder="Optional remarks"
+                          size="1"
+                        />
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Badge color="amber" variant="soft">
+                          Pending
+                        </Badge>
+                      </Table.Cell>
+                      <Table.Cell className="py-3 align-top">
+                        <Flex gap="2" wrap="wrap">
+                          <Button
+                            size="1"
+                            onClick={() => handleAction(item._id, "approve")}
+                            disabled={processingId === item._id}
+                          >
+                            Approve
+                          </Button>
+                          <Button
+                            size="1"
+                            color="red"
+                            variant="soft"
+                            onClick={() => handleAction(item._id, "reject")}
+                            disabled={processingId === item._id}
+                          >
+                            Reject
+                          </Button>
+                        </Flex>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))}
+                </Table.Body>
+              </Table.Root>
+            </div>
           )}
         </Card>
 

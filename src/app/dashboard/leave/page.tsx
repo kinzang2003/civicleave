@@ -34,12 +34,23 @@ type LeaveApplication = {
   approverName?: string;
 };
 
-const REQUIRED_TYPES = [
-  "casual leave",
-  "earned leave",
-  "annual leave",
-  "eol leave",
-];
+function normalizeRole(rawRole?: string): string {
+  const normalized = (rawRole || "Officer")
+    .toLowerCase()
+    .replace(/[\s_-]/g, "");
+
+  const roleMap: Record<string, string> = {
+    officer: "Officer",
+    divisionhead: "DivisionHead",
+    departmenthead: "DepartmentHead",
+    commissioner: "Commissioner",
+    chairperson: "Chairperson",
+    secretaryservice: "SecretaryService",
+    admin: "Admin",
+  };
+
+  return roleMap[normalized] || "Officer";
+}
 
 export default function LeaveDashboardPage() {
   const router = useRouter();
@@ -79,7 +90,7 @@ export default function LeaveDashboardPage() {
 
         const profile = await profileRes.json();
         const userId = profile?._id;
-        const role = (profile?.role || "Officer").trim();
+        const role = normalizeRole(profile?.role);
         const adminFromProfile = !!profile?.isAdmin;
         setIsAdmin(adminFromProfile);
         setCanApprove(
@@ -131,16 +142,9 @@ export default function LeaveDashboardPage() {
   }, [router]);
 
   const leaveAvailabilityRows = useMemo(() => {
-    return REQUIRED_TYPES.map((name) => {
-      const found = leaveEntries.find(
-        (entry) => entry.leaveTypeName?.toLowerCase().trim() === name,
-      );
-
-      return {
-        leaveTypeName: name,
-        balance: found?.balance || 0,
-      };
-    });
+    return [...leaveEntries]
+      .filter((entry) => !!entry.leaveTypeName)
+      .sort((a, b) => a.leaveTypeName.localeCompare(b.leaveTypeName));
   }, [leaveEntries]);
 
   const filteredApplications = useMemo(() => {
@@ -214,14 +218,24 @@ export default function LeaveDashboardPage() {
               </Table.Row>
             </Table.Header>
             <Table.Body>
-              {leaveAvailabilityRows.map((row, index) => (
-                <Table.Row key={index}>
-                  <Table.RowHeaderCell className="capitalize">
-                    {row.leaveTypeName}
-                  </Table.RowHeaderCell>
-                  <Table.Cell>{row.balance}</Table.Cell>
+              {leaveAvailabilityRows.length > 0 ? (
+                leaveAvailabilityRows.map((row, index) => (
+                  <Table.Row key={index}>
+                    <Table.RowHeaderCell>
+                      {row.leaveTypeName}
+                    </Table.RowHeaderCell>
+                    <Table.Cell>{row.balance}</Table.Cell>
+                  </Table.Row>
+                ))
+              ) : (
+                <Table.Row>
+                  <Table.Cell colSpan={2}>
+                    <Text size="2" color="gray">
+                      No leave types configured yet
+                    </Text>
+                  </Table.Cell>
                 </Table.Row>
-              ))}
+              )}
             </Table.Body>
           </Table.Root>
         </Card>

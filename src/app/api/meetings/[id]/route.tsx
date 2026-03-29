@@ -27,7 +27,7 @@ async function authenticate(req: Request) {
 //     const decoded = await authenticate(req);
 
 //     const client = await clientPromise;
-//     const db = client.db("e_sign_db");
+//     const db = client.db("civic_leave_db");
 
 //     const meeting = await db.collection("meetings").findOne({
 //       _id: new ObjectId(id),
@@ -42,15 +42,21 @@ async function authenticate(req: Request) {
 //   }
 // }
 
-export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params;
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
-    const meeting = await db.collection("meetings").findOne({ _id: new ObjectId(id) });
+    const meeting = await db
+      .collection("meetings")
+      .findOne({ _id: new ObjectId(id) });
 
-    if (!meeting) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (!meeting)
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     // Return the meeting object
     return NextResponse.json(meeting);
@@ -59,8 +65,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params;
     const decoded = await authenticate(req);
@@ -84,9 +92,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       const buffer = Buffer.from(await file.arrayBuffer());
       const filename = Date.now() + "_" + file.name.replaceAll(" ", "_");
       const uploadDir = path.join(process.cwd(), "public/uploads");
-      
-      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-      
+
+      if (!fs.existsSync(uploadDir))
+        fs.mkdirSync(uploadDir, { recursive: true });
+
       fs.writeFileSync(path.join(uploadDir, filename), buffer);
 
       fileUpdate = {
@@ -96,7 +105,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     }
 
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
     // 3. Perform the update
     const result = await db.collection("meetings").updateOne(
@@ -110,7 +119,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
           updatedAt: new Date(),
           ...fileUpdate, // Only overwrites fileName/Path if a new file was sent
         },
-      }
+      },
     );
 
     return NextResponse.json({ message: "Updated", id });
@@ -121,15 +130,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 }
 
 // DELETE /api/meetings/:id
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await params; // Fix: Must await params
     const decoded = await authenticate(req);
     const { organizerIdQuery } = getUserIdVariants(decoded.id);
     const client = await clientPromise;
-    const db = client.db("e_sign_db");
+    const db = client.db("civic_leave_db");
 
-    await db.collection("meetings").deleteOne({ _id: new ObjectId(id), organizerId: organizerIdQuery });
+    await db
+      .collection("meetings")
+      .deleteOne({ _id: new ObjectId(id), organizerId: organizerIdQuery });
     return NextResponse.json({ message: "Deleted" });
   } catch (err: any) {
     return NextResponse.json({ error: "Delete failed" }, { status: 500 });

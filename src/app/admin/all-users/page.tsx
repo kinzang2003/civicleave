@@ -7,7 +7,7 @@ import Sidebar from "@/components/Sidebar";
 
 interface User {
   _id: string;
-  firstName: string;
+  name: string;
   cid: string;
   designation: string;
   phone: string;
@@ -158,7 +158,7 @@ export default function AllUsersPage() {
   // Filter & Pagination
   const filteredUsers = users.filter(
     (u) =>
-      u.firstName.toLowerCase().includes(search.toLowerCase()) ||
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
       u.cid.includes(search) ||
       u.departmentName.toLowerCase().includes(search.toLowerCase()) ||
       u.divisionName.toLowerCase().includes(search.toLowerCase()) ||
@@ -233,7 +233,10 @@ export default function AllUsersPage() {
         {/* Users Table */}
         <div className="overflow-x-auto w-full bg-white border border-gray-200 rounded-lg">
           {/* Desktop Table */}
-          <table className="w-full table-auto min-w-full divide-y divide-gray-200 hidden md:table">
+          <table
+            className="w-full table-auto divide-y divide-gray-200 hidden md:table"
+            style={{ minWidth: 1350 }}
+          >
             <thead className="bg-gray-100/60">
               <tr>
                 {[
@@ -244,7 +247,7 @@ export default function AllUsersPage() {
                   "Email",
                   "Department",
                   "Division",
-                  "Role",
+                  "Role / Change",
                   "Registered",
                   "Actions",
                 ].map((col) => (
@@ -264,14 +267,17 @@ export default function AllUsersPage() {
                     key={user._id}
                     className="hover:bg-gray-50/80 transition-colors"
                   >
-                    <td className="px-4 py-3 font-medium">{user.firstName}</td>
+                    <td className="px-4 py-3 font-medium">{user.name}</td>
                     <td className="px-4 py-3">{user.cid}</td>
                     <td className="px-4 py-3">{user.designation}</td>
                     <td className="px-4 py-3">{user.phone}</td>
                     <td className="px-4 py-3">{user.email}</td>
                     <td className="px-4 py-3">{user.departmentName}</td>
                     <td className="px-4 py-3">{user.divisionName}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3" style={{ minWidth: 220 }}>
+                      <p className="text-[11px] text-gray-500 mb-1">
+                        Current: {user.role || "Officer"}
+                      </p>
                       <select
                         value={user.role || "Officer"}
                         onChange={(e) =>
